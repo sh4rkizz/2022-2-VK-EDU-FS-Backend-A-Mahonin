@@ -1,8 +1,5 @@
 """ Module is being used to play a game of TIC-TAC-TOE """
 
-from numpy import arange, full, ndarray, diag, fliplr
-from numpy import sum as np_sum
-
 from ai_player import AIPlayer
 
 
@@ -12,11 +9,16 @@ class TicTacGame:
     which are recounted as a coordinate tuple """
 
     def __init__(self):
-        """ Creates starting board (ndarray) which is filled with '-' elements
+        """ Creates starting board which is filled with '-' elements
         Also sets game settings and creates an AI if the player wants to play
         against a computer """
 
-        self.table = full((3, 3), '-')
+        self.table = [['-', '-', '-'], ['-', '-', '-'], ['-', '-', '-']]
+        self.prompt_board = [
+            [len(self.table) * num_y + num_x + 1 for num_x in range(len(line))]
+            for num_y, line in enumerate(self.table)
+        ]
+
         self.player_tags = ['X', 'O']
         self.winner = None
 
@@ -25,6 +27,7 @@ class TicTacGame:
         self.active_ai = AIPlayer(
             tag=(set(self.player_tags) - set(self.player_tag)).pop(),
             player_tag=self.player_tag,
+            field_size=len(self.table)
         ) if self.pve else None
 
         self.show_prompt_board()
@@ -48,11 +51,10 @@ class TicTacGame:
 
         return bool(int(game_mode) - 1), tag_choice
 
-    @staticmethod
-    def show_prompt_board():
+    def show_prompt_board(self):
         """ Visualizes prompts for the input to play the game """
 
-        print(*arange(1, 10).reshape(3, 3), sep='\n')
+        print(*self.prompt_board, sep='\n')
 
     def show_board(self):
         """ Visualizes current playing board """
@@ -61,29 +63,32 @@ class TicTacGame:
         print('=' * 15)
 
     def validate(self, pos: str) -> (tuple[int, int], None):
-        """ Interprets input as coordinates for the numpy.ndarray
+        """ Interprets input as coordinates for the array
 
         returns coordinate tuple: if input is correct
-        returns None: if input is incorrect """
+        returns None: if input is incorrect or the cell is occupied"""
 
-        allowed_positions = {'1', '2', '3', '4', '5', '6', '7', '8', '9'}
+        allowed_positions = [str(x + 1) for x in range(len(self.table) ** 2)]
 
-        try:
-            if pos not in allowed_positions:
-                raise ValueError
-
-            pos = int(pos)
-            return (pos - 1) // 3, (pos + 2) % 3
-        except ValueError:
-            print('You have to use given inputs to play the game')
+        if pos not in allowed_positions:
             self.show_prompt_board()
+            print('You need to use given inputs to play the game\n')
 
             return None
 
-    def is_occupied(self, coordinates: tuple) -> bool:
+        pos_y, pos_x = (int(pos) - 1) // 3, (int(pos) + 2) % 3
+
+        if self.is_occupied(pos_y, pos_x):
+            print('The cell you chose is already occupied by a player\n')
+
+            return None
+
+        return pos_y, pos_x
+
+    def is_occupied(self, pos_y: int, pos_x: int) -> bool:
         """ Tells if the cell is occupied by a player """
 
-        return self.table[coordinates] != '-'
+        return self.table[pos_y][pos_x] != '-'
 
     def move(self, player_tag: str, ai_coordinate: tuple = None) -> (str, None):
         """ Simulates a player making a move,
@@ -93,28 +98,34 @@ class TicTacGame:
             if ai_coordinate == -1 or self.winner is not None:
                 return self.check_winner()
 
-            coordinates = ai_coordinate if ai_coordinate is not None else self.validate(input())
+            if ai_coordinate is not None:
+                pos_y, pos_x = ai_coordinate
+            else:
+                position = self.validate(input('Choose a cell you want to go for\n'))
 
-            if coordinates is not None:
-                if not self.is_occupied(coordinates):
-                    self.table[coordinates] = player_tag
-                    self.show_board()
+                if position is None:
+                    continue
 
-                    return self.check_winner()
+                pos_y, pos_x = position
 
-                print('This cell is occupied')
+            self.table[pos_y][pos_x] = player_tag
+            self.show_board()
+
+            return self.check_winner()
 
     def is_draw(self) -> bool:
         """ Counts the number of empty cells
         returns true if all the cells are occupied """
 
-        return np_sum(self.table.reshape(1, 9) == '-') == 0
+        return [cell for line in self.table for cell in line].count('-') == 0
 
-    def is_winning_line(self, line: ndarray) -> (str, bool):
+    def is_winning_line(self, line: list[tuple]) -> (str, bool):
         """ Counts line winning conditions """
 
+        cells = [self.table[pos[0]][pos[1]] for pos in line]
+
         for tag in self.player_tags:
-            if np_sum(line == tag) == 3:
+            if cells[0] == cells[1] == cells[2] == tag:
                 self.winner = tag
 
                 return tag
@@ -128,14 +139,19 @@ class TicTacGame:
             self.winner = 'Friendship'
 
         lines_to_check = (
-            diag(self.table),
-            diag(fliplr(self.table)),
-            self.table[0, :],
-            self.table[1, :],
-            self.table[2, :],
-            self.table[:, 0],
-            self.table[:, 1],
-            self.table[:, 2],
+            # Diagonals
+            [(0, 0), (1, 1), (2, 2)],
+            [(2, 0), (1, 1), (0, 2)],
+
+            # Rows
+            [(0, 0), (0, 1), (0, 2)],
+            [(1, 0), (1, 1), (1, 2)],
+            [(2, 0), (2, 1), (2, 2)],
+
+            # Columns
+            [(0, 0), (1, 0), (2, 0)],
+            [(0, 1), (1, 1), (2, 1)],
+            [(0, 2), (1, 2), (2, 2)],
         )
 
         for line in lines_to_check:
