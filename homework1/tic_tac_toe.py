@@ -41,11 +41,11 @@ class TicTacGame:
         allowed_tag_choice = ['X', 'x', 'х', 'Х', 'O', 'o', '0', 'о', 'О']
 
         while game_mode not in {'1', '2'}:
-            game_mode = input('Choose game mode:\n\t1 - PvP\n\t2 - PvE\n\t')
+            game_mode = input('Choose game mode:\n\t1 - PvP\n\t2 - PvE\n\t').strip()
 
         if game_mode == '2':
             while tag_choice not in allowed_tag_choice:
-                tag_choice = input('Choose the game symbol:\n\tX or O')
+                tag_choice = input('Choose the game symbol:\n\tX or O').strip()
 
             tag_choice = ['X', 'O'][not allowed_tag_choice.index(tag_choice) < 4]
 
@@ -54,7 +54,8 @@ class TicTacGame:
     def show_prompt_board(self):
         """ Visualizes prompts for the input to play the game """
 
-        print(*self.prompt_board, sep='\n')
+        for line in self.prompt_board:
+            print(str(line).replace(',', ''))
 
     def show_board(self):
         """ Visualizes current playing board """
@@ -71,8 +72,15 @@ class TicTacGame:
         allowed_positions = [str(x + 1) for x in range(len(self.table) ** 2)]
 
         if pos not in allowed_positions:
+            if pos == '':
+                print('You did not choose a position')
+            elif not pos.isdigit():
+                print('You need to use numeric position')
+            else:
+                print(f'You must use a number between {allowed_positions[0]} '
+                      f'and {allowed_positions[-1]}')
+
             self.show_prompt_board()
-            print('You need to use given inputs to play the game\n')
 
             return None
 
@@ -101,7 +109,7 @@ class TicTacGame:
             if ai_coordinate is not None:
                 pos_y, pos_x = ai_coordinate
             else:
-                position = self.validate(input('Choose a cell you want to go for\n'))
+                position = self.validate(input('Choose a cell you want to go for\n').strip())
 
                 if position is None:
                     continue
