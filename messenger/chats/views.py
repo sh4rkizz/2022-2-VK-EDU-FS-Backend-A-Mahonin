@@ -1,8 +1,8 @@
-from django.http import HttpResponse, Http404, JsonResponse
+from django.http import JsonResponse
 from django.shortcuts import render
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_GET, require_POST, require_http_methods
-from time import time
+from chats.models import Chat
 
 
 @require_GET
@@ -11,74 +11,42 @@ def home(request):
 
 
 @csrf_exempt
-@require_POST
-def create_chat(request):
-    chats = [
-        {
-            'chat_id': 1,
-            'username': 'Martin Komitski',
-            'message': 'Pushed into master? Again?...'
-        }, {
-            'chat_id': 2,
-            'username': request.POST.get('name'),
-            'message': request.POST.get('message')
-        }
-    ]
+@require_GET
+def chat(request):
+    chat_id = request.GET.get('id')
 
-    return JsonResponse(chats, safe=False)
+    if chat_id:
+        content = Chat.objects.get(id=chat_id)
+        content = str(content)
+    else:
+        content = Chat.objects.all()
+        content = [str(c) for c in content]
+
+    return JsonResponse(content, safe=False)
 
 
 @csrf_exempt
-@require_http_methods(['GET', 'POST'])
-def chat(request, pk: int):
-    chat_detail = {
-        'chat_id': pk,
-        'username': 'Erwin Schrödinger',
-        'messages': [
-            {
-                'message_id': 1,
-                'author': 'self',
-                'message': 'Are u alive?',
-                'time': (time() * 1000)
-            },
-            {
-                'message_id': 2,
-                'author': 'companion',
-                'message': 'Relative',
-                'time': (time() + 1) * 1000
-            },
-        ]
-    }
+@require_POST
+def create_chat(request):
+    Chat.objects.create(companion=request.POST.get('companion'))
 
-    if request.method == 'POST':
-        chat_detail['messages'].append(
-            {
-                'message_id': 3,
-                'author': 'self',
-                'message': request.POST.get('message'),
-                'time': (time() + 2) * 1000
-            }
-        )
-
-    return JsonResponse(chat_detail)
+    return JsonResponse('200, CREATED', safe=False)
 
 
-@require_GET
-def chat_list(request):
-    chat_list_with_preview = {
-        'chats': [
-            {
-                'chat_id': 1,
-                'username': 'Erwin Schrödinger',
-                'message': ''
-            },
-            {
-                'chat_id': 2,
-                'username': 'Dmitrii Zaytsev',
-                'message': ['Sorry, i`ve pushed into master'][-1]
-            },
+@csrf_exempt
+@require_POST
+def delete_chat(request):
+    chat_to_delete = Chat.objects.get(id=request.POST.get('id'))
+    chat_to_delete.delete()
 
-        ]
-    }
+    return JsonResponse('204 DELETED', safe=False)
 
-    return JsonResponse(chat_list_with_preview)
+
+@csrf_exempt
+@require_POST
+def edit_chat(request):
+    chat_to_edit = Chat.objects.get(id=request.POST.get('id'))
+    chat_to_edit.companion = request.POST.get('companion') if request.POST.get('companion') else chat_to_edit.companion
+    chat_to_edit.save()
+
+    return JsonResponse('200 EDITED', safe=False)

@@ -1,7 +1,7 @@
 from django.urls import path
-from .views import username, meta
+from .views import user, create_user
 
 urlpatterns = [
-    path('username/<int:user_id>', username, name='user full name info'),
-    path('meta/<int:user_id>', meta, name='user meta')
+    path('', user, name='user info'),
+    path('create', create_user, name='create new user')
 ]
