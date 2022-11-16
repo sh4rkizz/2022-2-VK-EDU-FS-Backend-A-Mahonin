@@ -1,26 +1,31 @@
-from django.http import JsonResponse
+from django.http import JsonResponse, QueryDict
+from django.shortcuts import get_object_or_404, get_list_or_404
 from django.views.decorators.csrf import csrf_exempt
-from django.views.decorators.http import require_GET, require_POST
+from django.views.decorators.http import require_GET, require_http_methods
+
 from .models import User
 
 
 @require_GET
-def user(request):
-    user_id = request.GET.get('id')
-    if user_id:
-        usr = User.objects.get(id=request.GET.get('id'))
-        return JsonResponse(str(usr), safe=False)
+def users(request):
+    return JsonResponse({'users': [str(u) for u in get_list_or_404(User)]})
 
-    users = User.objects.all()
-    return JsonResponse([str(u) for u in users], safe=False)
+
+@require_GET
+def info(request, pku):
+    return JsonResponse(str(get_object_or_404(User, id=pku)), safe=False, status=200)
 
 
 @csrf_exempt
-def create_user(request):
-    User.objects.create(
-        username=request.POST.get('username'),
-        bio=request.POST.get('bio'),
-        birthday=request.POST.get('bday')
-    )
+@require_http_methods(['PATCH'])
+def edit_user(request, pku):
+    parameters = QueryDict(request.body)
+    user = get_object_or_404(User, id=pku)
 
-    return JsonResponse('200, OK')
+    user.username = parameters.get('uname', user.username)
+    user.bio = parameters.get('bio', user.bio)
+    user.first_name = parameters.get('fname', user.first_name)
+    user.last_name = parameters.get('lname', user.last_name)
+    user.save()
+
+    return JsonResponse('EDITED', safe=False, status=200)
