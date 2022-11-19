@@ -5,7 +5,7 @@ from .views import *
 urlpatterns = [
     # Chat URLs
     path('', chat_list, name='chat list'),
-    path('<int:pkc>', chat, name='chat messages'),
+    path('<int:pkc>', chat_messages, name='chat messages'),
     path('info/<int:pkc>', chat_info, name='chat meta information'),
     path('create_chat', create_chat, name='create new chat'),
     path('delete_chat/<int:pkc>', delete_chat, name='chat deletion'),

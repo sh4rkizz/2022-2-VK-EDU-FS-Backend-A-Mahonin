@@ -3,17 +3,22 @@ from django.shortcuts import get_object_or_404, get_list_or_404
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_GET, require_http_methods
 
+from utils.helpers import serialize_user
 from .models import User
 
 
 @require_GET
-def users(request):
-    return JsonResponse({'users': [str(u) for u in get_list_or_404(User)]})
+def user_list(request):
+    users = [serialize_user(user) for user in get_list_or_404(User)]
+
+    return JsonResponse({'users': users}, status=200)
 
 
 @require_GET
-def info(request, pku):
-    return JsonResponse(str(get_object_or_404(User, id=pku)), safe=False, status=200)
+def user_info(request, pku):
+    user = serialize_user(get_object_or_404(User, id=pku))
+
+    return JsonResponse(user, status=200)
 
 
 @csrf_exempt
