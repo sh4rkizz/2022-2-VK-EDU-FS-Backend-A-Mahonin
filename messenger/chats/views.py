@@ -3,195 +3,106 @@ from django.shortcuts import get_object_or_404, get_list_or_404
 from django.shortcuts import render
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_GET, require_POST, require_http_methods
+from rest_framework.decorators import action
+from rest_framework.response import Response
+from rest_framework.viewsets import ModelViewSet, ViewSet
 
-from chats.models import Chat
-from chats.models import Message
+from chat_messages.serializiers import MessageSerializer
+from chats.models import Chat, ChatMember
+from chat_messages.models import Message
+from chats.serializers import ChatSerializer, ChatMemberSerializer
 from users.models import User
-from utils.helpers import serialize_chat, serialize_message, serialize_user
+from users.serializers import UserSerializer
 
 
-@require_GET
-def home(request):
-    return render(request, 'index.html', content_type='text/html')
+class ChatViewSet(ViewSet):
+    @staticmethod
+    def list(request):
+        chats = ChatSerializer(get_list_or_404(Chat), many=True).data
 
+        return Response({'chats': chats}, status=200)
 
-@require_GET
-def chat_list(request):
-    chats = [serialize_chat(chat) for chat in get_list_or_404(Chat)]
+    @staticmethod
+    def retrieve(request, pk=None):
+        chat = ChatSerializer(get_object_or_404(Chat, id=pk)).data
 
-    return JsonResponse({'chats': chats}, status=200)
+        return Response(chat, status=200)
 
+    @staticmethod
+    def create(request):
+        params = QueryDict(request.body)
 
-@require_GET
-def chat_messages(request, pkc):
-    messages = [serialize_message(message) for message in get_list_or_404(Message, chat=pkc)]
+        title = params.get('title')
+        u1 = get_object_or_404(User, id=params.get('u1'))
 
-    return JsonResponse({'messages': messages}, status=200)
+        if title:
+            chat = Chat(title=title, is_group_chat=True)
+            chat.save()
 
+            ChatMember(user=u1, chat=chat, is_admin=True, is_creator=True).save()
 
-@require_GET
-def chat_info(request, pkc):
-    chat = serialize_chat(get_object_or_404(Chat, id=pkc))
+            return Response({'status': 'success', 'message': 'Group chat created'}, status=201)
 
-    return JsonResponse(chat, status=200)
+        chat = Chat()
+        chat.save()
 
+        u2 = get_object_or_404(User, id=params.get('u2'))
+        ChatMember(user=u1, chat=chat, is_admin=False, is_creator=True).save()
+        ChatMember(user=u2, chat=chat, is_admin=False, is_creator=False).save()
 
-@require_GET
-def group_chat_members(request, pkgc):
-    chat = get_object_or_404(Chat, id=pkgc)
+        return Response({'status': 'success', 'message': 'Chat created'}, status=201)
 
-    if not chat.is_group_chat:
-        return JsonResponse({'status': 'error', 'message': 'This chat is a dialog'}, status=403)
+    @staticmethod
+    def partial_update(request, pk=None):
+        chat = get_object_or_404(Chat, id=pk)
+        parameters = QueryDict(request.body)
 
-    members = [serialize_user(user) for user in chat.users.values_list(flat=True)]
+        if not chat.is_group_chat:
+            return Response({'status': 'error', 'message': 'This is not a group chat'}, status=403)
 
-    return JsonResponse({'members': members}, status=200)
+        chat.title = parameters.get('title', chat.title)
+        chat.description = parameters.get('description', chat.description)
+        chat.save(update_fields=['title', 'description'])
 
+        return Response({'status': 'success', 'message': 'Chat edited'}, status=200)
 
-@csrf_exempt
-@require_POST
-def create_chat(request):
-    params = QueryDict(request.body)
-    u1 = get_object_or_404(User, id=params.get('u1'))
-    u2 = get_object_or_404(User, id=params.get('u2'))
+    @staticmethod
+    def destroy(request):
+        get_object_or_404(Chat, id=QueryDict(request.body).get('chat')).delete()
 
-    # TODO check for same users dialog creation (duplicate with different IDs)
+        return Response({'status': 'success', 'message': 'Chat deleted'}, status=204)
 
-    chat = Chat()
-    chat.save()
 
-    chat.users.add(u1)
-    chat.users.add(u2)
+class ChatMemberViewSet(ViewSet):
+    @staticmethod
+    def retrieve(request, pk=None):
+        chat_member = get_list_or_404(ChatMember, chat=pk)
 
-    return JsonResponse({'status': 'success', 'message': 'Created'}, status=201)
+        return Response({'users': ChatMemberSerializer(chat_member, many=True).data}, status=200)
 
+    @staticmethod
+    def create(request):
+        chat = get_object_or_404(Chat, id=QueryDict(request.body).get('chat'))
+        user = get_object_or_404(User, id=QueryDict(request.body).get('user'))
 
-@csrf_exempt
-@require_POST
-def create_group_chat(request):
-    params = QueryDict(request.body)
+        if user.id in chat.users.values_list('id', flat=True):
+            return Response({'status': 'error', 'message': f'User {user} is already in the chat'}, status=400)
 
-    user = get_object_or_404(User, id=params.get('creator'))
-    title = params.get('title')
+        chat.users.add(user)
 
-    if not title:
-        return JsonResponse({'status': 'error', 'message': 'Empty title for group chat'}, status=403)
+        return Response({'status': 'success', 'message': 'User added'}, status=200)
 
-    chat = Chat(title=title, is_group_chat=True)
-    chat.save()
+    @staticmethod
+    def destroy(request, pk=None):
+        chat = get_object_or_404(Chat, id=pk)
+        user = get_object_or_404(User, id=QueryDict(request.body).get('user'))
 
-    chat.users.add(user)
+        if chat.is_group_chat:
+            return Response({'status': 'error', 'message': f'You cant remove users from dialog'}, status=403)
 
-    return JsonResponse({'status': 'success', 'message': 'Created'}, status=201)
+        if user.id in chat.users.values_list('id', flat=True):
+            return Response({'status': 'error', 'message': f'User {user} is not in the chat'}, status=404)
 
+        chat.users.remove(user)
 
-@csrf_exempt
-@require_http_methods(['DELETE'])
-def delete_chat(request, pkc):
-    get_object_or_404(Chat, id=pkc).delete()
-
-    return JsonResponse({'status': 'success', 'message': 'Deleted'}, status=204)
-
-
-@csrf_exempt
-@require_http_methods(['PATCH'])
-def edit_chat(request, pkc):
-    chat = get_object_or_404(Chat, id=pkc)
-    parameters = QueryDict(request.body)
-
-    if not chat.is_group_chat:
-        return JsonResponse({'status': 'error', 'message': 'This is not a group chat'}, status=403)
-
-    chat.title = parameters.get('title', chat.title)
-    chat.description = parameters.get('description', chat.description)
-    chat.save(update_fields=['title', 'description'])
-
-    return JsonResponse({'status': 'success', 'message': 'Edited'}, status=200)
-
-
-@csrf_exempt
-@require_http_methods(['PATCH'])
-def add_chat_member(request, pkc, pku):
-    chat = get_object_or_404(Chat, id=pkc)
-    user_to_add = get_object_or_404(User, id=pku)
-
-    if not chat.is_group_chat and chat.users.count() == 2:
-        return JsonResponse({'status': 'error', 'message': 'This chat is full'}, status=403)
-
-    if user_to_add.id in chat.users.values_list('id', flat=True):
-        return JsonResponse({'status': 'error', 'message': f'User {user_to_add} is already in the chat'}, status=403)
-
-    chat.users.add(user_to_add)
-
-    return JsonResponse({'status': 'success', 'message': 'User added'}, status=200)
-
-
-@csrf_exempt
-@require_http_methods(['DELETE'])
-def delete_chat_member(request, pkc, pku):
-    chat = get_object_or_404(Chat, id=pkc)
-    user = get_object_or_404(User, id=pku)
-
-    if user.id in chat.users.values_list('id', flat=True):
-        return JsonResponse({'status': 'error', 'message': f'User {user} is not in the chat'}, status=404)
-
-    chat.users.remove(user)
-
-    return JsonResponse({'status': 'success', 'message': 'Deleted'}, status=204)
-
-
-@csrf_exempt
-@require_POST
-def create_message(request, pkc):
-    parameters = QueryDict(request.body)
-
-    chat = get_object_or_404(Chat, id=pkc)
-    message_author = get_object_or_404(User, id=parameters.get('author'))
-    content = parameters.get('content')
-
-    if message_author.id not in tuple(chat.users.values_list('id', flat=True)):
-        return JsonResponse({'status': 'error', 'message': 'Unauthorized message'}, status=401)
-
-    if not content:
-        return JsonResponse({'status': 'error', 'message': 'Unavailable message'}, status=400)
-
-    Message(
-        chat=chat,
-        author=message_author,
-        content=content,
-        status='created',
-    ).save()
-
-    return JsonResponse({'status': 'success', 'message': 'Created'}, status=201)
-
-
-@csrf_exempt
-@require_http_methods(['PATCH'])
-def edit_message(request, pkm):
-    parameters = QueryDict(request.body)
-    message = get_object_or_404(Message, id=pkm)
-
-    message.content = parameters.get('content', message.content)
-    message.is_edited = True
-    message.save(update_fields=['content', 'is_edited'])
-
-    return JsonResponse({'status': 'success', 'message': 'Edited'}, status=200)
-
-
-@csrf_exempt
-@require_http_methods(['PATCH'])
-def mark_read(request, pkm):
-    message = get_object_or_404(Message, id=pkm)
-
-    message.is_read = True
-    message.save(update_fields=['is_read'])
-
-    return JsonResponse({'status': 'success', 'message': 'Edited'}, status=200)
-
-
-@csrf_exempt
-@require_http_methods(['DELETE'])
-def delete_message(request, pkm):
-    get_object_or_404(Message, id=pkm).delete()
-
-    return JsonResponse({'status': 'success', 'message': 'Deleted'}, status=204)
+        return Response({'status': 'success', 'message': 'User deleted'}, status=204)

@@ -13,7 +13,8 @@ class Chat(Model):
     is_group_chat = BooleanField(verbose_name='is_this_a_group_chat', default=False)
     creation_time = DateTimeField(verbose_name='chat_creation_time', auto_now_add=True)
 
-    users: QuerySet = ManyToManyField(User, verbose_name='chat_users', through='ChatMember')
+    users: QuerySet = ManyToManyField(User, verbose_name='chat_users', through='ChatMember',
+                                      through_fields=['chat', 'user'])
 
     def __str__(self):
         if self.is_group_chat:
@@ -36,31 +37,17 @@ class Chat(Model):
 
 class ChatMember(Model):
     chat = ForeignKey(Chat, verbose_name='chat', on_delete=CASCADE, null=True)
-    user = ForeignKey(User, verbose_name='user', on_delete=SET_NULL, null=True)
+    user = ForeignKey(User, verbose_name='user', related_name='self', on_delete=SET_NULL, null=True)
+    invited_by = ForeignKey(User, verbose_name='personal_user_admin', null=True, on_delete=SET_NULL)
 
-    invitation_time = DateTimeField(verbose_name='user_invitation_in_chat_time', auto_now_add=True)
+    is_admin = BooleanField(verbose_name='is_this_user_an_admin', null=True, default=False)
+    is_creator = BooleanField(verbose_name='is_this_user_a_creator', null=True, default=False)
+
+    invitation_time = DateTimeField(verbose_name='was_invited_at', auto_now_add=True)
+
+    def __str__(self):
+        return f'User {self.user.username} in chat {self.chat.title}, was invited by {self.invited_by.username}'
 
     class Meta:
         verbose_name = 'Chat member'
         verbose_name_plural = 'Chat members'
-
-
-class Message(Model):
-    """ Chat message model
-    This models references message author and the chat this message belongs to. """
-
-    chat = ForeignKey(Chat, verbose_name='chat', on_delete=CASCADE, null=True)
-    author = ForeignKey(User, verbose_name='message_author', on_delete=SET_NULL, null=True)
-    content = TextField(verbose_name='message_content')
-    creation_time = DateTimeField(verbose_name='message_time', auto_now_add=True)
-    status = CharField(max_length=10, verbose_name='message_status', null=True)
-    is_read = BooleanField(verbose_name='message_is_read_status', default=False, null=True)
-    is_edited = BooleanField(verbose_name='message_id_edited_status', default=False, null=True)
-
-    def __str__(self):
-        return f'Author: {self.author}; Message: {self.content}; Sent at {self.creation_time}'
-
-    class Meta:
-        verbose_name = 'Message'
-        verbose_name_plural = 'Messages'
-        ordering = ['creation_time']
