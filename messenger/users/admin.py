@@ -1,3 +1,9 @@
-from django.contrib import admin
+from django.contrib.admin import register, ModelAdmin
 
-# Register your models here.
+from users.models import User
+
+
+@register(User)
+class UserAdmin(ModelAdmin):
+    list_display = ['id', 'username', 'is_online', 'email', 'last_seen_at']
+    ordering = ['id']

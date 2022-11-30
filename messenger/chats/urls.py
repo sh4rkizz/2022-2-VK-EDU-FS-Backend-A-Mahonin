@@ -1,25 +1,22 @@
 from django.urls import path
-
-from .views import *
+from .views import ChatListView, ChatInfoView, ChatUpdateView, ChatDeleteView
+from .views import MessageListView, MessageDeleteView, MessageUpdateView
+from .views import ChatMemberListView, ChatMemberCreateView, ChatMemberDeleteView, ChatMemberUpdateView, \
+    ChatMemberInfoView
 
 urlpatterns = [
-    # Chat URLs
-    path('', chat_list, name='chat list'),
-    path('<int:pkc>', chat_messages, name='chat messages'),
-    path('info/<int:pkc>', chat_info, name='chat meta information'),
-    path('create_chat', create_chat, name='create new chat'),
-    path('delete_chat/<int:pkc>', delete_chat, name='chat deletion'),
-    path('edit_chat/<int:pkc>', edit_chat, name='chat edition'),
-    path('add_chat_member/<int:pkc>/<int:pku>', add_chat_member, name='add new chat member (user)'),
-    path('delete_chat_member/<int:pkc>/<int:pku>', delete_chat_member, name='delete existing chat member'),
+    path('', ChatListView.as_view(), name='chat-list'),
+    path('info/<int:pk>/', ChatInfoView.as_view(), name='chat'),
+    path('update/<int:pk>/', ChatUpdateView.as_view(), name='chat-update'),
+    path('delete/<int:pk>/', ChatDeleteView.as_view(), name='chat-delete'),
 
-    # Group chat URLs
-    path('create_group_chat', create_group_chat, name='create new group chat'),
-    path('members/<int:pkgc>', group_chat_members, name='list all group chat members'),
+    path('poll/<int:pk>/', MessageListView.as_view(), name='message-list'),
+    path('message/update/<int:pk>/', MessageUpdateView.as_view(), name='message-update'),
+    path('message/delete/<int:pk>/', MessageDeleteView.as_view(), name='message-delete'),
 
-    # Messages URLs
-    path('create_message/<int:pkc>', create_message, name='create new message for chat <id>'),
-    path('edit_message/<int:pkm>', edit_message, name='edit content pf the existing message'),
-    path('mark_read/<int:pkm>', mark_read, name='change message status to \'read\''),
-    path('delete_message/<int:pkm>', delete_message, name='delete existing message'),
+    path('members/<int:chat>/', ChatMemberListView.as_view(), name='member-list'),
+    path('members/<int:chat>/info/<int:user>/', ChatMemberInfoView.as_view(), name='member-list'),
+    path('members/<int:chat>/add/<int:user>/', ChatMemberCreateView.as_view(), name='member-create'),
+    path('members/<int:chat>/update/<int:user>/', ChatMemberUpdateView.as_view(), name='member-update'),
+    path('members/<int:chat>/remove/<int:user>/', ChatMemberDeleteView.as_view(), name='member-delete'),
 ]

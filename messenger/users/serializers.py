@@ -1,9 +1,9 @@
-from rest_framework.serializers import ModelSerializer
-
+from utils import DynamicSerializer
 from .models import User
 
 
-class UserSerializer(ModelSerializer):
+# TODO add avatar
+class UserSerializer(DynamicSerializer):
     class Meta:
         model = User
-        fields = ('id', 'username', 'first_name', 'last_name', 'birthday', 'bio')
+        fields = ('id', 'username', 'first_name', 'last_name', 'is_online', 'last_seen_at', 'birthday', 'bio')
