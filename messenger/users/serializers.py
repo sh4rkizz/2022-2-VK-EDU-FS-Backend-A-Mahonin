@@ -2,7 +2,6 @@ from utils import DynamicSerializer
 from .models import User
 
 
-# TODO add avatar
 class UserSerializer(DynamicSerializer):
     class Meta:
         model = User
