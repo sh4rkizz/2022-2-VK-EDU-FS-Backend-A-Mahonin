@@ -14,8 +14,8 @@ class Message(Model):
     status = CharField(max_length=10, verbose_name='message_status', default='created', null=True)
     is_read = BooleanField(verbose_name='message_is_read_status', default=False, null=True)
     is_edited = BooleanField(verbose_name='message_id_edited_status', default=False, null=True)
-    image = ImageField(verbose_name='message_image', upload_to='media/', blank=True, null=True, max_length=10485760)
-    audio = FileField(verbose_name='message_audio', upload_to='media/', blank=True, null=True, max_length=10485760)
+    image = TextField(verbose_name='message_image', null=True, blank=True)
+    audio = TextField(verbose_name='message_audio', null=True, blank=True)
 
     def __unicode__(self):
         return self.creation_time
@@ -48,17 +48,11 @@ class Chat(Model):
 
     def __str__(self):
         if self.is_group_chat:
-            return f'Group chat {self.title}'
-
-        if self.users.count() == 0:
-            return f'Just an empty chat with id {self.id}'
+            return f'{self.title}'
 
         usernames = self.users.values_list('username', flat=True)
 
-        if self.users.count() == 1:
-            return f'{usernames.first()} is feeling lonely in chat {self.id}'
-
-        return f'Chat between {usernames.first()} and {usernames.last()}'
+        return f'{usernames.last()}'
 
     class Meta:
         verbose_name = 'Chat'

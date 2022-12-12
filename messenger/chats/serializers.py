@@ -1,4 +1,4 @@
-from rest_framework.serializers import ModelSerializer, StringRelatedField
+from rest_framework.serializers import ModelSerializer, StringRelatedField, Field
 
 from users.serializers import UserSerializer
 from .models import Chat, Message, ChatMember
@@ -51,9 +51,12 @@ class MessagePollSerializer(ModelSerializer):
 
 
 class LastMessageSerializer(ModelSerializer):
+    chat = StringRelatedField()
+    author = StringRelatedField()
+
     class Meta:
         model = Message
-        fields = ('id', 'author', 'text', 'creation_time', 'is_read')
+        fields = ('id', 'chat', 'author', 'text', 'image', 'audio', 'creation_time', 'is_read')
 
 
 class MessageEditSerializer(ModelSerializer):

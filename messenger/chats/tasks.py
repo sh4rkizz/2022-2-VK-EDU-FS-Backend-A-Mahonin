@@ -20,11 +20,10 @@ def send_email_chat_created(chat_title):
 
 @app.task()
 def count_system_users():
-    # users = User.objects.all()
-    # quantity = users.count
+    users = User.objects.all()
+    quantity = users.count()
 
-    mock_quantity = 123
-    date = str(datetime.now())
+    # date = datetime.now().strftime()
 
     with open('log-file.txt', 'a') as file:
-        file.write(f'User count is: {mock_quantity} -- {date}\n')
+        file.write(f'User count is: {quantity} --\n')

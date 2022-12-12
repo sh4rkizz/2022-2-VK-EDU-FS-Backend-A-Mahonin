@@ -14,6 +14,6 @@ app.autodiscover_tasks()
 app.conf.beat_schedule = {
     'check-every-30-seconds': {
         'task': 'chats.tasks.count_system_users',
-        'schedule': 20.0,
+        'schedule': 30.0,
     },
 }

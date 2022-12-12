@@ -6,6 +6,7 @@ from chats.permissions import IsChatAttendee, IsMessageAuthor, IsChatAdmin
 from chats.serializers import MessageSerializer, MessagePollSerializer, MessageReadSerializer, MessageEditSerializer, \
     LastMessageSerializer
 from utils import clear_tags
+# from utils.publish_message import publish_message
 
 
 class MessageQueryset:
@@ -29,6 +30,7 @@ class MessageCreateView(MessageQueryset, CreateAPIView):
     def perform_create(self, serializer):
         chat = get_object_or_404(Chat, id=self.kwargs.get('pk'))
         self.request.data['text'] = clear_tags(self.request.data.get('text'))
+        # publish_message(self.request.data)
 
         return serializer.save(chat=chat, author=self.request.user, text=self.request.data['text'])
 

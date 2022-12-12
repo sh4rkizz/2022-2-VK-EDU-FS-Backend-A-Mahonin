@@ -38,8 +38,8 @@ AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.ModelBackend'
 ]
 
-LOGIN_URL = 'http://localhost:3000/2022-2-VK-EDU-FS-Frontend-A-Mahonin#/login/'
-LOGIN_REDIRECT_URL = 'http://localhost:3000/2022-2-VK-EDU-FS-Frontend-A-Mahonin#/'
+LOGIN_URL = '/login/'
+LOGIN_REDIRECT_URL = '/home/'
 LOGOUT_URL = '/logout/'
 LOGOUT_REDIRECT_URL = '/login/'
 
@@ -75,7 +75,7 @@ DATABASES = {
         'NAME': DB_NAME,
         'USER': DB_USER,
         'PASSWORD': DB_PASSWORD,
-        'HOST': 'psql',
+        'HOST': '127.0.0.1',
         'PORT': 5432
     }
 }
