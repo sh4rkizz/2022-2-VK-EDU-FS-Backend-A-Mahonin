@@ -2,7 +2,7 @@ from django.urls import path
 from .views import ChatListView, ChatInfoView, ChatUpdateView, ChatDeleteView, ChatCreateView
 from .views import (
     MessageListView, MessageCreateView, MessageRetrieveDestroy,
-    MessageEditView, MessageReadView, MessageLastView
+    MessageEditView, MessageReadView
 )
 from .views import (
     ChatMemberCreateView, ChatMemberDestroyView,
@@ -16,7 +16,6 @@ urlpatterns = [
     path('update/<int:pk>/', ChatUpdateView.as_view(), name='chat-update'),
     path('delete/<int:pk>/', ChatDeleteView.as_view(), name='chat-delete'),
 
-    path('poll/last/<int:pk>/', MessageLastView.as_view(), name='message-last'),
     path('poll/<int:pk>/', MessageListView.as_view(), name='message-list'),
     path('poll/<int:pk>/new/', MessageCreateView.as_view(), name='message-create'),
 

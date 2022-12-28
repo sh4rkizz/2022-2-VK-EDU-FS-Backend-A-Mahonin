@@ -1,6 +1,6 @@
-from rest_framework.serializers import ModelSerializer, StringRelatedField, Field
-
+from rest_framework.serializers import ModelSerializer, StringRelatedField
 from users.serializers import UserSerializer
+
 from .models import Chat, Message, ChatMember
 from .tasks import send_email_chat_created
 
@@ -8,18 +8,31 @@ MESSAGE_FIELDS = ('id', 'author', 'chat', 'text', 'image', 'audio', 'creation_ti
 CHAT_FIELDS = ('id', 'title', 'description', 'is_group_chat', 'creator', 'creation_time', 'are_notifications_on')
 
 
+class LastMessageSerializer(ModelSerializer):
+    chat = StringRelatedField()
+    author = StringRelatedField()
+
+    class Meta:
+        model = Message
+        fields = ('id', 'chat', 'author', 'text', 'image', 'audio', 'creation_time', 'is_read')
+        read_only_fields = ('id', 'author', 'chat', 'creation_time')
+
+
 class ChatListSerializer(ModelSerializer):
+    last_message = LastMessageSerializer()
+
     class Meta:
         model = Chat
-        fields = ('id', 'title', 'description')
+        fields = ('id', 'title', 'last_message')
         read_only_fields = ('id',)
 
 
 class ChatSerializer(ModelSerializer):
     def create(self, validated_data):
         chat = Chat.objects.create(**validated_data)
-        send_email_chat_created.delay(chat_title=validated_data.get('title'))
         ChatMember.objects.create(chat=chat, user=validated_data.get('creator'), is_admin=True)
+
+        send_email_chat_created.delay(chat_title=chat)
 
         return chat
 
@@ -41,22 +54,13 @@ class ChatCreateSerializer(ModelSerializer):
 
 
 class MessagePollSerializer(ModelSerializer):
-    author = UserSerializer(fields=('id', 'username'))
-    chat = StringRelatedField()
-
-    class Meta:
-        model = Message
-        fields = ('id', 'author', 'text', 'image', 'audio', 'chat', 'is_edited', 'creation_time')
-        read_only_fields = ('id', 'author', 'chat', 'creation_time')
-
-
-class LastMessageSerializer(ModelSerializer):
     chat = StringRelatedField()
     author = StringRelatedField()
 
     class Meta:
         model = Message
-        fields = ('id', 'chat', 'author', 'text', 'image', 'audio', 'creation_time', 'is_read')
+        fields = ('id', 'chat', 'author', 'text', 'image', 'audio', 'creation_time', 'is_read', 'is_edited')
+        read_only_fields = ('id', 'author', 'chat', 'creation_time')
 
 
 class MessageEditSerializer(ModelSerializer):

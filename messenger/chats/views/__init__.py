@@ -6,5 +6,5 @@ from .member import (
 )
 from .message import (
     MessageListView, MessageCreateView, MessageRetrieveDestroy,
-    MessageEditView, MessageReadView, MessageLastView
+    MessageEditView, MessageReadView
 )

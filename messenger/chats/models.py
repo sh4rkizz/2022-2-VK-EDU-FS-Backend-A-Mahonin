@@ -9,19 +9,22 @@ class Message(Model):
 
     chat = ForeignKey('Chat', verbose_name='chat', on_delete=CASCADE, null=True)
     author = ForeignKey(AUTH_USER_MODEL, verbose_name='message_author', on_delete=SET_NULL, blank=True, null=True)
+
     text = TextField(verbose_name='message_content', blank=True, null=True)
-    creation_time = DateTimeField(verbose_name='message_time', auto_now_add=True)
-    status = CharField(max_length=10, verbose_name='message_status', default='created', null=True)
-    is_read = BooleanField(verbose_name='message_is_read_status', default=False, null=True)
-    is_edited = BooleanField(verbose_name='message_id_edited_status', default=False, null=True)
     image = TextField(verbose_name='message_image', null=True, blank=True)
     audio = TextField(verbose_name='message_audio', null=True, blank=True)
+
+    is_read = BooleanField(verbose_name='message_is_read_status', default=False, null=True)
+    is_edited = BooleanField(verbose_name='message_id_edited_status', default=False, null=True)
+
+    status = CharField(max_length=10, verbose_name='message_status', default='created', null=True)
+    creation_time = DateTimeField(verbose_name='message_time', auto_now_add=True)
 
     def __unicode__(self):
         return self.creation_time
 
     def __str__(self):
-        return f'Author: {self.author}; Message: {self.text}; Sent at {self.creation_time}'
+        return f'{self.text}'
 
     class Meta:
         verbose_name = 'Message'
@@ -35,14 +38,18 @@ class Chat(Model):
     but it can be changed to be a group chat (via setting title at the creation phase). """
 
     creator = ForeignKey(User, verbose_name='chat_creator', null=True, on_delete=SET_NULL, related_name='chat_creator')
+    last_message = ForeignKey(
+        Message, verbose_name='chat_last_message', null=True,
+        on_delete=SET_NULL, related_name='last_message', blank=True
+    )
     users = ManyToManyField(
         AUTH_USER_MODEL, verbose_name='chat_users',
         through='ChatMember', through_fields=['chat', 'user']
     )
 
     are_notifications_on = BooleanField(verbose_name='are_notifications_enabled_for_this_chat', default=True)
-    title = CharField(max_length=100, verbose_name='chat_name', null=True)
-    description = CharField(max_length=256, verbose_name='chat_description', null=True)
+    title = CharField(max_length=100, verbose_name='chat_name', null=True, blank=True)
+    description = CharField(max_length=256, verbose_name='chat_description', null=True, blank=True)
     is_group_chat = BooleanField(verbose_name='is_this_a_group_chat', default=False)
     creation_time = DateTimeField(verbose_name='chat_creation_time', auto_now_add=True)
 
@@ -67,7 +74,7 @@ class ChatMember(Model):
     invitation_time = DateTimeField(verbose_name='was_invited_at', auto_now_add=True)
 
     def __str__(self):
-        return f'User {self.user.username} in chat {self.chat.title}, was invited by {self.invited_by.username}'
+        return f'{self.user.username}'
 
     class Meta:
         verbose_name = 'Chat member'

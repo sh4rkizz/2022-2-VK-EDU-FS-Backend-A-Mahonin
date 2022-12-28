@@ -64,12 +64,3 @@ class MessageReadView(MessageQueryset, UpdateAPIView):
     serializer_class = MessageReadSerializer
     permission_classes = (IsChatAttendee,)
 
-
-class MessageLastView(RetrieveAPIView):
-    """ GET: Retrieve last chat message for chat <int:pk> """
-
-    serializer_class = LastMessageSerializer
-    permission_classes = (IsChatAttendee,)
-
-    def get_object(self):
-        return Message.objects.filter(chat=self.kwargs.get('pk')).last()
