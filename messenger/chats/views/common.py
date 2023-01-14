@@ -1,13 +1,16 @@
-from django.contrib.auth.views import LogoutView
+from django.contrib.auth.views import LogoutView, LoginView
 from django.shortcuts import render
 from django.utils.timezone import now
+from django.views.generic import RedirectView
 
-from application.settings import LOGIN_URL
+from application.settings import LOGOUT_REDIRECT_URL, LOGIN_URL, LOGIN_REDIRECT_URL
 from users.models import User
 
 
 def login(request):
-    return render(request, 'login.html')
+    User.objects.filter(id=request.user.id).update(isOnline=True, lastSeenAt=now())
+
+    return RedirectView.as_view(url=LOGIN_REDIRECT_URL)(request)
 
 
 def home(request):
@@ -15,6 +18,6 @@ def home(request):
 
 
 def logout(request):
-    User.objects.filter(id=request.user.id).update(is_online=False, last_seen_at=now())
+    User.objects.filter(id=request.user.id).update(isOnline=False, lastSeenAt=now())
 
-    return LogoutView.as_view(next_page=LOGIN_URL)(request)
+    return LogoutView.as_view(next_page=LOGOUT_REDIRECT_URL)(request)

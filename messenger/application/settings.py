@@ -17,6 +17,8 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'django_celery_results',
     'django_celery_beat',
+    'oauth2_provider',
+    'drf_social_oauth2',
     'rest_framework',
     'social_django',
     'users',
@@ -39,9 +41,9 @@ AUTHENTICATION_BACKENDS = [
 ]
 
 LOGIN_URL = '/login/'
-LOGIN_REDIRECT_URL = '/home/'
+LOGIN_REDIRECT_URL = 'http://localhost:3000/'
 LOGOUT_URL = '/logout/'
-LOGOUT_REDIRECT_URL = '/login/'
+LOGOUT_REDIRECT_URL = 'http://localhost:3000/'
 
 SOCIAL_AUTH_GOOGLE_OAUTH2_KEY = GOOGLE_CLIENT_ID
 SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET = GOOGLE_CLIENT_SECRET
@@ -105,16 +107,20 @@ LOGIN_IGNORE_URLS = [
     '/login/',
     '/logout/',
     '/admin/',
-    '/auth/'
+    '/auth/',
+    '/social-auth/'
 ]
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+
 AUTH_USER_MODEL = 'users.User'
 
 CORS_ORIGIN_WHITELIST = [
-    'http://localhost:8000',
-    'http://127.0.0.1:8000',
+    'http://localhost:8000/',
+    'http://127.0.0.1:8000/',
+    'http://127.0.0.1:3000/',
+    'http://localhost:3000/',
 ]
 
 CELERY_IMPORTS = ('chats.tasks',)

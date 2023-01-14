@@ -5,5 +5,5 @@ from users.models import User
 
 @register(User)
 class UserAdmin(ModelAdmin):
-    list_display = ['id', 'username', 'is_online', 'email', 'last_seen_at']
+    list_display = ['id', 'username', 'isOnline', 'email', 'lastSeenAt']
     ordering = ['id']

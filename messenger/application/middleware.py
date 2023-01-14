@@ -1,9 +1,5 @@
-from django.conf import settings
+from application.settings import LOGIN_IGNORE_URLS
 from django.contrib.auth.views import redirect_to_login
-
-BYPASS_URLS = []
-if hasattr(settings, 'LOGIN_IGNORE_URLS'):
-    BYPASS_URLS += settings.LOGIN_IGNORE_URLS
 
 
 class LoginRequiredMiddleware:
@@ -15,7 +11,7 @@ class LoginRequiredMiddleware:
 
     @staticmethod
     def is_bypassed(path):
-        for url in BYPASS_URLS:
+        for url in LOGIN_IGNORE_URLS:
             if path.startswith(url):
                 return True
         return False

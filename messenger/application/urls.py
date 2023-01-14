@@ -13,6 +13,7 @@ urlpatterns = [
 
     path('admin/', admin.site.urls),
     path('auth/', include('social_django.urls', namespace='social')),
+    path('social-auth/', include('drf_social_oauth2.urls', namespace='drf')),
 
     path('api/chats/', include('chats.urls')),
     path('api/users/', include('users.urls')),

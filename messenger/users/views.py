@@ -1,4 +1,3 @@
-from django.shortcuts import get_list_or_404
 from rest_framework.generics import RetrieveAPIView
 
 from users.models import User
@@ -10,3 +9,10 @@ class UserView(RetrieveAPIView):
 
     serializer_class = UserSerializer
     queryset = User.objects.all()
+
+
+class CurrentUserView(RetrieveAPIView):
+    serializer_class = UserSerializer
+
+    def get_object(self):
+        return User.objects.filter(id=self.request.user.id).first()

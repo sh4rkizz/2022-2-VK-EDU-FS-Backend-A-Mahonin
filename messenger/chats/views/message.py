@@ -1,10 +1,8 @@
-from rest_framework.generics import UpdateAPIView, get_object_or_404, \
-    RetrieveAPIView, ListAPIView, CreateAPIView, RetrieveDestroyAPIView
+from rest_framework.generics import UpdateAPIView, get_object_or_404, ListAPIView, CreateAPIView, RetrieveDestroyAPIView
 
 from chats.models import Message, Chat
 from chats.permissions import IsChatAttendee, IsMessageAuthor, IsChatAdmin
-from chats.serializers import MessageSerializer, MessagePollSerializer, MessageReadSerializer, MessageEditSerializer, \
-    LastMessageSerializer
+from chats.serializers import MessageSerializer, MessagePollSerializer, MessageReadSerializer, MessageEditSerializer
 from utils import clear_tags
 # from utils.publish_message import publish_message
 
@@ -30,7 +28,6 @@ class MessageCreateView(MessageQueryset, CreateAPIView):
     def perform_create(self, serializer):
         chat = get_object_or_404(Chat, id=self.kwargs.get('pk'))
         self.request.data['text'] = clear_tags(self.request.data.get('text'))
-        # publish_message(self.request.data)
 
         return serializer.save(chat=chat, author=self.request.user, text=self.request.data['text'])
 
@@ -63,13 +60,3 @@ class MessageReadView(MessageQueryset, UpdateAPIView):
 
     serializer_class = MessageReadSerializer
     permission_classes = (IsChatAttendee,)
-
-
-class MessageLastView(RetrieveAPIView):
-    """ GET: Retrieve last chat message for chat <int:pk> """
-
-    serializer_class = LastMessageSerializer
-    permission_classes = (IsChatAttendee,)
-
-    def get_object(self):
-        return Message.objects.filter(chat=self.kwargs.get('pk')).last()

@@ -28,7 +28,7 @@ class IsChatAdmin(IsChatAttendee):
             user=request.user
         )
 
-        return self.is_attendee(request, view) and member.is_admin
+        return self.is_attendee(request, view) and member.isAdmin
 
 
 class IsChatCreator(IsChatAttendee):
@@ -51,4 +51,4 @@ class IsUserChief(IsChatAttendee):
     """ Permission for user who invited other user to remove him from the chat """
 
     def has_object_permission(self, request, view, obj):
-        return self.is_attendee(request, view) and obj.invited_by == request.user.id
+        return self.is_attendee(request, view) and obj.invitedBy == request.user.id

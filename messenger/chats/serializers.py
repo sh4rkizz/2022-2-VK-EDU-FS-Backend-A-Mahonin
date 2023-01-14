@@ -1,25 +1,38 @@
-from rest_framework.serializers import ModelSerializer, StringRelatedField, Field
-
+from rest_framework.serializers import ModelSerializer, StringRelatedField
 from users.serializers import UserSerializer
+
 from .models import Chat, Message, ChatMember
 from .tasks import send_email_chat_created
 
-MESSAGE_FIELDS = ('id', 'author', 'chat', 'text', 'image', 'audio', 'creation_time', 'is_read', 'is_edited')
-CHAT_FIELDS = ('id', 'title', 'description', 'is_group_chat', 'creator', 'creation_time', 'are_notifications_on')
+MESSAGE_FIELDS = ('id', 'author', 'chat', 'text', 'image', 'audio', 'timestamp', 'isRead', 'isEdited')
+CHAT_FIELDS = ('id', 'title', 'description', 'isGroupChat', 'creator', 'timestamp', 'areNotificationsOn')
+
+
+class LastMessageSerializer(ModelSerializer):
+    chat = StringRelatedField()
+    author = StringRelatedField()
+
+    class Meta:
+        model = Message
+        fields = ('id', 'chat', 'author', 'text', 'image', 'audio', 'timestamp', 'isRead')
+        read_only_fields = ('id', 'author', 'chat', 'timestamp')
 
 
 class ChatListSerializer(ModelSerializer):
+    lastMessage = LastMessageSerializer()
+
     class Meta:
         model = Chat
-        fields = ('id', 'title', 'description')
+        fields = ('id', 'title', 'lastMessage')
         read_only_fields = ('id',)
 
 
 class ChatSerializer(ModelSerializer):
     def create(self, validated_data):
         chat = Chat.objects.create(**validated_data)
-        send_email_chat_created.delay(chat_title=validated_data.get('title'))
         ChatMember.objects.create(chat=chat, user=validated_data.get('creator'), is_admin=True)
+
+        send_email_chat_created.delay(chat_title=chat)
 
         return chat
 
@@ -41,22 +54,13 @@ class ChatCreateSerializer(ModelSerializer):
 
 
 class MessagePollSerializer(ModelSerializer):
-    author = UserSerializer(fields=('id', 'username'))
-    chat = StringRelatedField()
-
-    class Meta:
-        model = Message
-        fields = ('id', 'author', 'text', 'image', 'audio', 'chat', 'is_edited', 'creation_time')
-        read_only_fields = ('id', 'author', 'chat', 'creation_time')
-
-
-class LastMessageSerializer(ModelSerializer):
     chat = StringRelatedField()
     author = StringRelatedField()
 
     class Meta:
         model = Message
-        fields = ('id', 'chat', 'author', 'text', 'image', 'audio', 'creation_time', 'is_read')
+        fields = ('id', 'chat', 'author', 'text', 'image', 'audio', 'timestamp', 'isRead', 'isEdited')
+        read_only_fields = ('id', 'author', 'chat', 'timestamp')
 
 
 class MessageEditSerializer(ModelSerializer):
@@ -95,11 +99,11 @@ class MessageSerializer(ModelSerializer):
     class Meta:
         model = Message
         fields = MESSAGE_FIELDS
-        read_only_fields = ('id', 'is_read')
+        read_only_fields = ('id', 'isRead')
 
 
 class ChatMemberSerializer(ModelSerializer):
-    user = UserSerializer(fields=('id', 'username', 'bio', 'is_active'))
+    user = UserSerializer(fields=('id', 'username', 'bio', 'isActive'))
 
     def create(self, validated_data):
         chat = validated_data.get('pk')
@@ -109,16 +113,16 @@ class ChatMemberSerializer(ModelSerializer):
 
     class Meta:
         model = ChatMember
-        fields = ('chat', 'user', 'is_admin', 'invited_by')
+        fields = ('chat', 'user', 'isAdmin', 'invitedBy')
 
 
 class ChatMemberUpdateSerializer(ModelSerializer):
     def update(self, instance, validated_data):
-        instance.is_admin = validated_data.get('is_admin')
+        instance.is_admin = validated_data.get('isAdmin')
         instance.save()
 
         return instance
 
     class Meta:
         model = ChatMember
-        fields = ('chat', 'user', 'is_admin')
+        fields = ('chat', 'user', 'isAdmin')
